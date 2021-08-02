@@ -10,7 +10,7 @@ import lk.ijse.jdbc_assignment1.tm.StudentTM;
 import java.sql.*;
 import java.util.Locale;
 
-public class SMSForm {
+public class SMSFormController {
     public Button btnClear;
     public Label lblStudentID;
     public TextField txtName;
