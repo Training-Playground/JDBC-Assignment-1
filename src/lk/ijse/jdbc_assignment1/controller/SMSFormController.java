@@ -1,13 +1,18 @@
 package lk.ijse.jdbc_assignment1.controller;
 
 import javafx.beans.property.ReadOnlyObjectWrapper;
+import javafx.collections.FXCollections;
 import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.util.Callback;
 import lk.ijse.jdbc_assignment1.tm.StudentTM;
 
+import javax.swing.text.html.HTMLDocument;
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 public class SMSFormController {
@@ -21,6 +26,9 @@ public class SMSFormController {
     private Connection connection;
     private PreparedStatement pstmSaveStudent;
     private PreparedStatement pstmSaveContact;
+    private PreparedStatement pstmDeleteStudent;
+    private PreparedStatement pstmDeleteContacts;
+    private PreparedStatement pstmSelectContacts;
 
     public void initialize() {
         lblStudentID.setText("Generated ID");
@@ -30,29 +38,70 @@ public class SMSFormController {
 
         colContacts.setCellValueFactory(param -> {
             ListView<String> lstContacts = new ListView<>();
-            lstContacts.setMaxHeight(75);
+            StudentTM student = param.getValue();
+            lstContacts.setItems(FXCollections.observableArrayList(student.getContacts()));
             return new ReadOnlyObjectWrapper<>(lstContacts);
         });
+
         TableColumn<StudentTM, Button> colDelete = (TableColumn<StudentTM, Button>) tblStudents.getColumns().get(3);
 
         colDelete.setCellValueFactory(param -> {
             Button btnDelete = new Button("Delete");
+
+            btnDelete.setOnAction(event -> {
+
+                try {
+                    connection.setAutoCommit(false);
+                    pstmSelectContacts.setInt(1, param.getValue().getId());
+
+                    if (pstmSelectContacts.executeQuery().next()){
+
+                        pstmDeleteContacts.setInt(1, param.getValue().getId());
+                        int affectedRows = pstmDeleteContacts.executeUpdate();
+                        if (affectedRows == 0){
+                            throw new RuntimeException("Failed to delete contacts");
+                        }
+                    }
+
+                    pstmDeleteStudent.setInt(1, param.getValue().getId());
+                    if (pstmDeleteStudent.executeUpdate() != 1){
+                        throw new RuntimeException("Failed to delete the student");
+                    }
+
+                    connection.commit();
+                    new Alert(Alert.AlertType.INFORMATION, param.getValue().getId() + " has been deleted successfully").show();
+                    tblStudents.getItems().remove(param.getValue());
+
+                } catch (Throwable e) {
+                    e.printStackTrace();
+                    try {
+                        connection.rollback();
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+                    new Alert(Alert.AlertType.ERROR, "Failed to delete the student").show();
+                }finally{
+                    try {
+                        connection.setAutoCommit(true);
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                    }
+                }
+
+            });
             return new ReadOnlyObjectWrapper<>(btnDelete);
         });
 
-        txtContact.setOnAction(new EventHandler<ActionEvent>() {
-            @Override
-            public void handle(ActionEvent event) {
-                String contact = txtContact.getText();
+        txtContact.setOnAction(event -> {
+            String contact = txtContact.getText();
 
-                if (contact.trim().isEmpty()){
-                    return;
-                }
-
-                lstContacts.getItems().add(contact);
-                txtContact.clear();
-
+            if (contact.trim().isEmpty()){
+                return;
             }
+
+            lstContacts.getItems().add(contact);
+            txtContact.clear();
+
         });
 
         try {
@@ -60,6 +109,9 @@ public class SMSFormController {
             connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dep7", "root", "mysql");
             pstmSaveStudent = connection.prepareStatement("INSERT INTO student (name) VALUES (?);", Statement.RETURN_GENERATED_KEYS);
             pstmSaveContact = connection.prepareStatement("INSERT INTO contact (contact, student_id) VALUES (?,?);");
+            pstmDeleteStudent = connection.prepareStatement("DELETE FROM student WHERE id=?");
+            pstmDeleteContacts = connection.prepareStatement("DELETE FROM contact WHERE student_id=?");
+            pstmSelectContacts = connection.prepareStatement("SELECT * FROM contact WHERE student_id=?");
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
 
@@ -120,6 +172,7 @@ public class SMSFormController {
             // Buffer -> Flush
             // By default transaction apply (it doesn't buffer anymore)
 
+            tblStudents.getItems().add(new StudentTM(generatedKeys.getInt(1),txtName.getText(), new ArrayList<>(lstContacts.getItems())));
             new Alert(Alert.AlertType.INFORMATION, "Student has been saved successfully").show();
             txtName.clear();
             txtContact.clear();
