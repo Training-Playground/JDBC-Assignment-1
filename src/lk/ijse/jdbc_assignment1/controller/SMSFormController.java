@@ -9,6 +9,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Callback;
 import lk.ijse.jdbc_assignment1.tm.StudentTM;
 
+import javax.management.StandardEmitterMBean;
 import javax.swing.text.html.HTMLDocument;
 import java.sql.*;
 import java.util.ArrayList;
@@ -38,6 +39,7 @@ public class SMSFormController {
 
         colContacts.setCellValueFactory(param -> {
             ListView<String> lstContacts = new ListView<>();
+            lstContacts.setPrefHeight(75);
             StudentTM student = param.getValue();
             lstContacts.setItems(FXCollections.observableArrayList(student.getContacts()));
             return new ReadOnlyObjectWrapper<>(lstContacts);
@@ -137,26 +139,38 @@ public class SMSFormController {
 
         try {
             Statement stm = connection.createStatement();
-            Statement stm2 = connection.createStatement();
-            ResultSet rst = stm.executeQuery("SELECT * FROM student");
+            ResultSet rst = stm.
+        executeQuery("SELECT s.id, s.name, c.contact FROM student s LEFT OUTER JOIN contact c on s.id = c.student_id;");
 
             while (rst.next()){
-                int id = rst.getInt(1);
-                String name = rst.getString(2);
-                ArrayList<String> contacts = new ArrayList<>();
+                int id = rst.getInt("id");
+                String name = rst.getString("name");
+                String contact = rst.getString("contact");
 
-                ResultSet rst2 = stm2.executeQuery("SELECT * FROM contact WHERE student_id = '" + id + "'");
-                while (rst2.next()){
-                    contacts.add(rst2.getString("contact"));
+                List<String> contacts;
+                if ((contacts = getStudentContactList(id)) == null) {
+                    contacts= new ArrayList<>();
+
+                    if (contact != null) {
+                        contacts.add(contact);
+                    }
+
+                    tblStudents.getItems().add(new StudentTM(id, name, contacts));
+                }else{
+                    contacts.add(contact);
                 }
-
-                tblStudents.getItems().add(new StudentTM(id, name, contacts));
             }
-
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
+    }
+
+    private List<String> getStudentContactList(int id){
+        for (StudentTM student : tblStudents.getItems()) {
+            if (student.getId() == id) return student.getContacts();
+        }
+        return null;
     }
 
     public void btnRemove_OnAction(ActionEvent actionEvent) {
