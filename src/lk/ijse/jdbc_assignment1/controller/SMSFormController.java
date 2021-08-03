@@ -127,6 +127,36 @@ public class SMSFormController {
         } catch (ClassNotFoundException | SQLException e) {
             e.printStackTrace();
         }
+
+        loadAllStudents();
+    }
+
+    private void loadAllStudents(){
+
+        tblStudents.getItems().clear();
+
+        try {
+            Statement stm = connection.createStatement();
+            Statement stm2 = connection.createStatement();
+            ResultSet rst = stm.executeQuery("SELECT * FROM student");
+
+            while (rst.next()){
+                int id = rst.getInt(1);
+                String name = rst.getString(2);
+                ArrayList<String> contacts = new ArrayList<>();
+
+                ResultSet rst2 = stm2.executeQuery("SELECT * FROM contact WHERE student_id = '" + id + "'");
+                while (rst2.next()){
+                    contacts.add(rst2.getString("contact"));
+                }
+
+                tblStudents.getItems().add(new StudentTM(id, name, contacts));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
     }
 
     public void btnRemove_OnAction(ActionEvent actionEvent) {
