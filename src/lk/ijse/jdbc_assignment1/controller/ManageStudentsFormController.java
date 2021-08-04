@@ -11,12 +11,13 @@ import lk.ijse.jdbc_assignment1.tm.StudentTM;
 
 import javax.management.StandardEmitterMBean;
 import javax.swing.text.html.HTMLDocument;
+import java.io.IOException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-public class SMSFormController {
+public class ManageStudentsFormController {
     public Button btnClear;
     public Label lblStudentID;
     public TextField txtName;
@@ -240,5 +241,9 @@ public class SMSFormController {
                 e.printStackTrace();
             }
         }
+    }
+
+    public void btnBack_OnAction(ActionEvent actionEvent) throws IOException {
+        HomeFormController.navigate(HomeFormController.NavigationMenu.HOME);
     }
 }

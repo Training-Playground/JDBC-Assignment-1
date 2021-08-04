@@ -9,8 +9,7 @@
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.text.Font?>
 
-
-<AnchorPane prefHeight="474.0" prefWidth="606.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="lk.ijse.jdbc_assignment1.controller.SMSFormController">
+<AnchorPane prefHeight="474.0" prefWidth="606.0" xmlns="http://javafx.com/javafx/8.0.171" xmlns:fx="http://javafx.com/fxml/1" fx:controller="lk.ijse.jdbc_assignment1.controller.ManageStudentsFormController">
    <children>
       <Label alignment="CENTER_RIGHT" layoutX="14.0" layoutY="19.0" prefHeight="16.0" prefWidth="84.0" text="Student ID: " textAlignment="RIGHT" />
       <Label alignment="CENTER_RIGHT" layoutX="14.0" layoutY="48.0" prefHeight="16.0" prefWidth="84.0" text="Name: " textAlignment="RIGHT" />
@@ -34,5 +33,6 @@
       </TableView>
       <Button fx:id="btnSave" layoutX="309.0" layoutY="216.0" mnemonicParsing="false" onAction="#btnSave_OnAction" prefHeight="26.0" prefWidth="84.0" text="Save" />
       <Button fx:id="btnClear" layoutX="519.0" layoutY="14.0" mnemonicParsing="false" onAction="#btnClear_OnAction" prefHeight="26.0" prefWidth="61.0" text="Clear" />
+      <Button layoutX="519.0" layoutY="109.0" mnemonicParsing="false" onAction="#btnBack_OnAction" text="Back" />
    </children>
 </AnchorPane>
