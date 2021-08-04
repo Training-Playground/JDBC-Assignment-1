@@ -109,7 +109,7 @@ public class ManageStudentsFormController {
 
         try {
             Class.forName("com.mysql.cj.jdbc.Driver");
-            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dep7", "root", "mysql");
+            connection = DriverManager.getConnection("jdbc:mysql://localhost:3306/dep7", "root", "Hamza@mysql56597");
             pstmSaveStudent = connection.prepareStatement("INSERT INTO student (name) VALUES (?);", Statement.RETURN_GENERATED_KEYS);
             pstmSaveContact = connection.prepareStatement("INSERT INTO contact (contact, student_id) VALUES (?,?);");
             pstmDeleteStudent = connection.prepareStatement("DELETE FROM student WHERE id=?");
