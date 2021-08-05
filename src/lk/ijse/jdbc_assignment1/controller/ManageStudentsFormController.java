@@ -6,7 +6,10 @@ import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.KeyCode;
 import javafx.util.Callback;
+import lk.ijse.jdbc_assignment1.tm.ContactLM;
+import lk.ijse.jdbc_assignment1.tm.ProviderTM;
 import lk.ijse.jdbc_assignment1.tm.StudentTM;
 import lk.ijse.jdbc_assignment1.util.DBConnection;
 
@@ -17,15 +20,18 @@ import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
 
 public class ManageStudentsFormController {
     public Button btnClear;
     public Label lblStudentID;
     public TextField txtName;
     public TextField txtContact;
-    public ListView<String> lstContacts;
+    public ListView<ContactLM> lstContacts;
     public Button btnRemove;
     public TableView<StudentTM> tblStudents;
+    public ComboBox<ProviderTM> cmbProviders;
+    public Button btnAdd;
     private Connection connection;
     private PreparedStatement pstmSaveStudent;
     private PreparedStatement pstmSaveContact;
@@ -96,22 +102,16 @@ public class ManageStudentsFormController {
             return new ReadOnlyObjectWrapper<>(btnDelete);
         });
 
-        txtContact.setOnAction(event -> {
-            String contact = txtContact.getText();
-
-            if (contact.trim().isEmpty()){
-                return;
+        cmbProviders.setOnKeyPressed(event -> {
+            if (event.getCode() == KeyCode.ENTER){
+                btnAdd.fire();
             }
-
-            lstContacts.getItems().add(contact);
-            txtContact.clear();
-
         });
 
         try {
             connection = DBConnection.getInstance().getConnection();
             pstmSaveStudent = connection.prepareStatement("INSERT INTO student (name) VALUES (?);", Statement.RETURN_GENERATED_KEYS);
-            pstmSaveContact = connection.prepareStatement("INSERT INTO contact (contact, student_id) VALUES (?,?);");
+            pstmSaveContact = connection.prepareStatement("INSERT INTO contact (contact, student_id, provider_id) VALUES (?,?,?);");
             pstmDeleteStudent = connection.prepareStatement("DELETE FROM student WHERE id=?");
             pstmDeleteContacts = connection.prepareStatement("DELETE FROM contact WHERE student_id=?");
             pstmSelectContacts = connection.prepareStatement("SELECT * FROM contact WHERE student_id=?");
@@ -132,6 +132,24 @@ public class ManageStudentsFormController {
         }
 
         loadAllStudents();
+        loadAllProviders();
+    }
+
+    private void loadAllProviders() {
+        cmbProviders.getItems().clear();
+
+        try {
+            Statement stm = connection.createStatement();
+            ResultSet rst = stm.executeQuery("SELECT * FROM provider");
+
+            while (rst.next()){
+                cmbProviders.getItems().add(new ProviderTM(rst.getInt(1),rst.getString(2)));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
     private void loadAllStudents(){
@@ -198,13 +216,14 @@ public class ManageStudentsFormController {
             ResultSet generatedKeys = pstmSaveStudent.getGeneratedKeys();
             generatedKeys.next();
 
-            for (String contact : lstContacts.getItems()) {
-                pstmSaveContact.setString(1, contact);
-                pstmSaveContact.setInt(2, generatedKeys.getInt(1));
+//            List<String> contacts = new ArrayList<>();
 
-                if (contact.contains("a")){
-                    throw new RuntimeException("Invalid contact");
-                }
+            for (ContactLM contact : lstContacts.getItems()) {
+                pstmSaveContact.setString(1, contact.getContact());
+                pstmSaveContact.setInt(2, generatedKeys.getInt(1));
+                pstmSaveContact.setInt(3, contact.getProviderID());
+
+//                contacts.add(contact.getContact());
 
                 affectedRows = pstmSaveContact.executeUpdate();
 
@@ -217,7 +236,8 @@ public class ManageStudentsFormController {
             // Buffer -> Flush
             // By default transaction apply (it doesn't buffer anymore)
 
-            tblStudents.getItems().add(new StudentTM(generatedKeys.getInt(1),txtName.getText(), new ArrayList<>(lstContacts.getItems())));
+            List<String> collectContacts = lstContacts.getItems().stream().map(contactLM -> contactLM.getContact()).collect(Collectors.toList());
+            tblStudents.getItems().add(new StudentTM(generatedKeys.getInt(1),txtName.getText(), collectContacts));
             new Alert(Alert.AlertType.INFORMATION, "Student has been saved successfully").show();
             txtName.clear();
             txtContact.clear();
@@ -245,5 +265,19 @@ public class ManageStudentsFormController {
 
     public void btnBack_OnAction(ActionEvent actionEvent) throws IOException {
         HomeFormController.navigate(HomeFormController.NavigationMenu.HOME);
+    }
+
+    public void btnAdd_OnAction(ActionEvent actionEvent) {
+        String contact = txtContact.getText();
+
+        if (contact.trim().isEmpty() || cmbProviders.getSelectionModel().isEmpty()){
+            return;
+        }
+
+        ProviderTM provider = cmbProviders.getSelectionModel().getSelectedItem();
+        lstContacts.getItems().add(new ContactLM(contact, provider.getId(), provider.getName()));
+        txtContact.clear();
+        cmbProviders.getSelectionModel().clearSelection();
+        txtContact.requestFocus();
     }
 }
