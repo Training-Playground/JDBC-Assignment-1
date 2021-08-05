@@ -29,6 +29,7 @@ public class DBConnection {
         } catch (ClassNotFoundException | SQLException e) {
             new Alert(Alert.AlertType.ERROR,"Failed to load the DBConnection").show();
             e.printStackTrace();
+            System.exit(1);
         }
     }
 
